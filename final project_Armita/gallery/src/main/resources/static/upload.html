@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="Author" content="Group 3">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Add Bootstrap CSS link -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Upload Image</title>
+    <script defer src="scripts/upload.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            init();
+        })
+    </script>
+</head>
+
+<body>
+<div id="header" class="d-flex justify-content-center" style="background-color: black">
+    <a id="add-photo-btn" type="submit" class="btn btn-lg btn-outline-light my-2" href="gallery.html">return to
+        gallery
+    </a>
+</div>
+<div class="container mt-5 mx-5">
+    <h3 class="mb-4  text-center">Upload New Image</h3>
+    <form id="imageUploadForm" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="imageTitle" class="form-label">Image Title:</label>
+            <input type="text" id="imageTitle" name="imageTitle" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="imageDescription" class="form-label">Image Description:</label>
+            <textarea id="imageDescription" name="imageDescription" rows="1" class="form-control"
+                      required></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="imageFile" class="form-label">Choose an Image:</label>
+            <input type="file" id="imageFile" name="imageFile" class="form-control" accept="image/*" required>
+        </div>
+        <div class="mb-3">
+            <input id="btn-submit" type="submit" class="btn btn-dark" value="upload">
+        </div>
+    </form>
+</div>
+<!-- Modal -->
+<div class="modal " id="myModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">&nbsp;</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                &nbsp;&nbsp;
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"></script>
+</body>
+</html>

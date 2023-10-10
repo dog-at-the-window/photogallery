@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="Author" content="Group 3">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles/photo.css">
+    <title>Photo Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script defer src="scripts/photo.js"></script>
+
+</head>
+
+<body>
+<div id="header" class="d-flex justify-content-center" style="background-color: black">
+    <a id="add-photo-btn" type="submit" class="btn btn-lg btn-outline-light my-2" href="gallery.html">return to
+        gallery
+    </a>
+</div>
+<div class="container">
+    <div class="row">
+        <div id="photo-container" class="col-md-6 offset-md-3">
+
+            <!-- Display the image here -->
+
+            <h2 class="h2">Title: <span id="photoTitle">Photo Title</span></h2>
+            <p class="title">Description: <span id="photoDescription">Photo Description</span></p>
+<!--            <p class="sub-title">updated at:<span id="photoUpdatedAt">Photo Description</span></p>-->
+            <button id="editTitleButton" class="btn btn-dark" >Edit Title</button>
+            <button id="editDescriptionButton" class="btn btn-dark" >Edit Description</button>
+            <button id="deleteButton" class="btn btn-dark" >Delete Photo</button>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"></script>
+</body>
+
+</html>

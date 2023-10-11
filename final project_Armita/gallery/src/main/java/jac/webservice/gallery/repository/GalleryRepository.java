@@ -1,8 +1,6 @@
 package jac.webservice.gallery.repository;
 
-import jac.webservice.gallery.exception.GalleryDataAccessException;
-import jac.webservice.gallery.exception.GalleryDataIntegrityViolationException;
-import jac.webservice.gallery.exception.GalleryResourceNotFoundException;
+import jac.webservice.gallery.exception.*;
 import jac.webservice.gallery.model.Photo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +29,19 @@ public class GalleryRepository {
             String query = "select * from ".concat(tbl);
             return jdbcTemplate.query(query, new GalleryRowMapper());
         } catch (DataAccessException dae) {
-            throw new GalleryDataAccessException("Failed to retrieve photos from the database.");
+            String err = dae.getMessage();
+            System.out.println(err);
+            if (err.toLowerCase().contains("failed to obtain jdbc connection")) {
+                throw new DatabaseConnectionFailure("connection to database failed");
+            } else if (err.toLowerCase().contains("bad sql grammar")) {
+                throw new DatabaseQueryFailure("bad SQL grammar, check the SQL query");
+            } else {
+                throw new GalleryDataAccessException(err);
+            }
+        } catch (RuntimeException e) {
+            String err = e.getMessage();
+            System.out.println(err);
+            throw new GalleryRuntimeException(err);
         }
     }
 
@@ -42,14 +52,32 @@ public class GalleryRepository {
             String query = "select * from ".concat(tbl).concat(" where id=?");
             return jdbcTemplate.queryForObject(query, new GalleryRowMapper(), id);
         } catch (EmptyResultDataAccessException ex) {
-            throw new GalleryResourceNotFoundException("photo with id " + id + " does not exist!", 1);
+            String err = ex.getMessage();
+            System.out.println(err);
+            if (err.toLowerCase().contains("incorrect result size")) {
+                throw new ResourceNotFoundException("photo with id " + id + " does not exist!");
+            } else {
+                throw new GalleryEmptyResultDataAccessException(err);
+            }
         } catch (DataAccessException dae) {
-            throw new GalleryDataAccessException("Failed to retrieve photos from the database.");
+            String err = dae.getMessage();
+            System.out.println(err);
+            if (err.toLowerCase().contains("failed to obtain jdbc connection")) {
+                throw new DatabaseConnectionFailure("connection to database failed");
+            } else if (err.toLowerCase().contains("bad sql grammar")) {
+                throw new DatabaseQueryFailure("bad SQL grammar, check the SQL query");
+            } else {
+                throw new GalleryDataAccessException(err);
+            }
+        } catch (RuntimeException e) {
+            String err = e.getMessage();
+            System.out.println(err);
+            throw new GalleryRuntimeException(err);
         }
     }
 
     /* update a photo of the gallery by id*/
-    public int updatePhotoById(int id, Map<String, String> requestBodyMap) {
+    public void updatePhotoById(int id, Map<String, String> requestBodyMap) {
         int rowsAffected = 0;
         try {
             ArrayList<Object> values = new ArrayList<>();
@@ -69,9 +97,25 @@ public class GalleryRepository {
                 rowsAffected = jdbcTemplate.update(query.toString(), values.toArray());
             }
         } catch (DataAccessException dae) {
-            throw new GalleryDataAccessException(dae.getMessage());
+            String err = dae.getMessage();
+            System.out.println(err);
+            if (err.toLowerCase().contains("failed to obtain jdbc connection")) {
+                throw new DatabaseConnectionFailure("connection to database failed");
+            } else if (err.toLowerCase().contains("bad sql grammar")) {
+                throw new DatabaseQueryFailure("bad SQL grammar, check the SQL query");
+            } else if (err.toLowerCase().contains("duplicate entry")) {
+                throw new DatabaseDuplicateEntry("photo with this name already exists in the DB");
+            } else {
+                throw new GalleryDataAccessException(err);
+            }
+        } catch (RuntimeException e) {
+            String err = e.getMessage();
+            System.out.println(err);
+            throw new GalleryRuntimeException(err);
         }
-        return rowsAffected;
+        if (rowsAffected == 0) {
+            throw new ResourceNotFoundException("Photo not found with id: " + id);
+        }
     }
 
     /* update a photo from the gallery by id*/
@@ -80,9 +124,20 @@ public class GalleryRepository {
             String query = "delete from ".concat(tbl).concat(" where id=?");
             return jdbcTemplate.update(query, id);
         } catch (DataAccessException dae) {
-            throw new GalleryDataAccessException(dae.getMessage());
+            String err = dae.getMessage();
+            System.out.println(err);
+            if (err.toLowerCase().contains("failed to obtain jdbc connection")) {
+                throw new DatabaseConnectionFailure("connection to database failed");
+            } else if (err.toLowerCase().contains("bad sql grammar")) {
+                throw new DatabaseQueryFailure("bad SQL grammar, check the SQL query");
+            } else {
+                throw new GalleryDataAccessException(err);
+            }
+        } catch (RuntimeException e) {
+            String err = e.getMessage();
+            System.out.println(err);
+            throw new GalleryRuntimeException(err);
         }
-
     }
 
     /* add a photo to the gallery*/
@@ -90,12 +145,31 @@ public class GalleryRepository {
 
         try {
             String query = "insert into ".concat(tbl).concat("(name,title,description,updatedAt) values(?,?,?,?)");
-            jdbcTemplate.
-                    update(query, photo.getName(), photo.getTitle(), photo.getDescription(), photo.getUpdatedAt());
+            jdbcTemplate.update(query, photo.getName(), photo.getTitle(), photo.getDescription(), photo.getUpdatedAt());
         } catch (DataIntegrityViolationException ex) {
-            throw new GalleryDataIntegrityViolationException(ex.getMessage());
-        }catch (DataAccessException dae) {
-            throw new GalleryDataAccessException(dae.getMessage());
+            String err = ex.getMessage();
+            System.out.println(err);
+            if (err.toLowerCase().contains("duplicate entry")) {
+                throw new DatabaseDuplicateEntry("photo with this name already exists in the DB");
+            } else {
+                throw new GalleryDataIntegrityViolationException(err);
+            }
+        } catch (DataAccessException dae) {
+            String err = dae.getMessage();
+            System.out.println(err);
+            if (err.toLowerCase().contains("failed to obtain jdbc connection")) {
+                throw new DatabaseConnectionFailure("connection to database failed");
+            } else if (err.toLowerCase().contains("bad sql grammar")) {
+                throw new DatabaseQueryFailure("bad SQL grammar, check the SQL query");
+            } else if (err.toLowerCase().contains("duplicate entry")) {
+                throw new DatabaseDuplicateEntry("photo with this name already exists in the DB");
+            } else {
+                throw new GalleryDataAccessException(err);
+            }
+        } catch (RuntimeException e) {
+            String err = e.getMessage();
+            System.out.println(err);
+            throw new GalleryRuntimeException(err);
         }
     }
 }

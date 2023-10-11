@@ -1,6 +1,6 @@
 package jac.webservice.gallery.service;
 
-import jac.webservice.gallery.exception.GalleryResourceNotFoundException;
+import jac.webservice.gallery.exception.ResourceNotFoundException;
 import jac.webservice.gallery.model.Photo;
 import jac.webservice.gallery.repository.GalleryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +26,7 @@ public class GalleryService {
 
     /* update a photo of the gallery by id*/
     public void updatePhotoById(int id, Map<String, String> requestBodyMap) {
-        int rowsAffected = galleryRepository.updatePhotoById(id, requestBodyMap);
-        if (rowsAffected == 0) {
-            throw new GalleryResourceNotFoundException("Photo not found with id: " + id, 1);
-        }
+        galleryRepository.updatePhotoById(id, requestBodyMap);
 
     }
 
@@ -37,7 +34,7 @@ public class GalleryService {
     public void removePhotoById(int id) {
         int rowsAffected = galleryRepository.removePhotoById(id);
         if (rowsAffected == 0) {
-            throw new GalleryResourceNotFoundException("Photo not found with id: " + id, 1);
+            throw new ResourceNotFoundException("Photo not found with id: " + id);
         }
     }
 

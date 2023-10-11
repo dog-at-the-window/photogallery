@@ -1,15 +1,15 @@
 package jac.webservice.gallery.controller;
 
-import jac.webservice.gallery.exception.GalleryDataAccessException;
-import jac.webservice.gallery.exception.GalleryDataIntegrityViolationException;
-import jac.webservice.gallery.exception.GalleryResourceNotFoundException;
+import jac.webservice.gallery.exception.*;
 import jac.webservice.gallery.model.Photo;
 import jac.webservice.gallery.service.GalleryService;
+import org.apache.tika.mime.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.apache.tika.Tika;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +28,8 @@ public class GalleryController {
         try {
             List<Photo> photos = galleryService.getAllPhotos();
             return ResponseEntity.ok(photos);
-        } catch (GalleryDataAccessException ex) {
+        } catch (DatabaseConnectionFailure | DatabaseQueryFailure | GalleryDataAccessException |
+                 GalleryRuntimeException ex) {
             return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -39,9 +40,10 @@ public class GalleryController {
         try {
             Photo photo = galleryService.getPhotoById(id);
             return ResponseEntity.ok(photo);
-        } catch (GalleryDataAccessException ex) {
+        } catch (DatabaseConnectionFailure | DatabaseQueryFailure | GalleryDataAccessException |
+                 GalleryRuntimeException ex) {
             return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (GalleryResourceNotFoundException rnfe) {
+        } catch (ResourceNotFoundException | GalleryEmptyResultDataAccessException rnfe) {
             return new ResponseEntity(rnfe.getMessage(), HttpStatus.NOT_FOUND);
         }
 
@@ -53,10 +55,13 @@ public class GalleryController {
         try {
             galleryService.updatePhotoById(id, requestBodyMap);
             return ResponseEntity.ok("Photo updated successfully.");
-        } catch (GalleryDataAccessException ex) {
+        } catch (DatabaseConnectionFailure | DatabaseQueryFailure | GalleryDataAccessException |
+                 GalleryRuntimeException ex) {
             return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (GalleryResourceNotFoundException rnfe) {
+        } catch (ResourceNotFoundException rnfe) {
             return new ResponseEntity(rnfe.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (DatabaseDuplicateEntry e) {
+            return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -66,9 +71,10 @@ public class GalleryController {
         try {
             galleryService.removePhotoById(id);
             return ResponseEntity.ok("Photo deleted successfully.");
-        } catch (GalleryResourceNotFoundException ex) {
+        } catch (ResourceNotFoundException ex) {
             return new ResponseEntity(ex.getMessage(), HttpStatus.NOT_FOUND);
-        } catch (GalleryDataAccessException ex) {
+        } catch (DatabaseConnectionFailure | DatabaseQueryFailure | GalleryDataAccessException |
+                 GalleryRuntimeException ex) {
             return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -80,23 +86,44 @@ public class GalleryController {
                                            @RequestParam("name") MultipartFile imageFile) {
 
         try {
-
             String imagesDirectory = System.getProperty("user.dir") + "/src/main/resources/static/images/";
-            System.out.println(imagesDirectory);
+            // Check the file extension to ensure it's an image
+            String originalFilename = imageFile.getOriginalFilename();
+            if (!originalFilename.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif|bmp)$")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid image file format.");
+            }
+
+            // Verify that the content matches an image format
+            Tika tika = new Tika();
+            String contentType = null;
+            try {
+                contentType = tika.detect(imageFile.getInputStream());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            if (!MediaType.parse(contentType).getType().equals("image")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid image content type.");
+            }
             File file = new File(imagesDirectory + imageFile.getOriginalFilename());
             //save photo to gallery
-            imageFile.transferTo(file);
+            try {
+                imageFile.transferTo(file);
+            } catch (IOException e) {
+                String err = e.getMessage();
+                System.out.println(err);
+                throw new RuntimeException(e);
+            }
             //save photo to DB
             Photo photo = new Photo(imageFile.getOriginalFilename(), title, description);
             galleryService.addPhoto(photo);
             return ResponseEntity.ok("Photo added successfully.");
-        } catch (GalleryDataIntegrityViolationException ex) {
-
-            return  ResponseEntity.status( HttpStatus.BAD_REQUEST).body(ex.getMessage());
-        } catch (GalleryDataAccessException | IOException ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ex.getMessage());
+        } catch (GalleryDataIntegrityViolationException | DatabaseDuplicateEntry ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        } catch (DatabaseConnectionFailure | DatabaseQueryFailure | GalleryDataAccessException |
+                 GalleryRuntimeException ex) {
+            return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
 
-    }}
+    }
+}
